@@ -7,20 +7,19 @@
 
 using namespace std;
 
-
 int main(int argc, char* argv[]){
 	ifstream inputFile;
 	string line;
 	int negtest = 0;
 	int fractest = 0;
-	float number;
+	float number = 0.;
 	vector<vector<float> > values;
 	vector<vector<int> > boundaryconditions;
 	vector<float> systemp;
 	vector<int> boundtemp;
 	vector<int> intigers;
 	vector<int> fractions;
-	int i,j,x,y;
+	int i = 0, j = 0, x = 0, y = 0;
 
 	
 	inputFile.open(argv[1]);
@@ -91,45 +90,24 @@ int main(int argc, char* argv[]){
 	
 	inputFile.close();
 
-	int imax = values.size(); cout << imax;
-	int jmax = values[0].size(); cout << jmax;
-	int iterations = 100000;
-	for(int k=0; k<iterations; k++) {
-	for(i=0; i<imax; i++) {
-		for (j=0; j<jmax; j++) {
-			if (boundaryconditions[i][j] == 1) {
-				continue;
-			}
-			else if (i == 0 && j == 0) {
-				values[i][j] = (values[i+1][j]+values[i][j+1])/2;
-			}
-			else if (i == imax-1 && j == jmax-1) {
-				values[i][j] = (values[i-1][j]+values[i][j-1])/2;
-			}
-			else if (i == 0 && j == jmax-1) {
-				values[i][j] = (values[i+1][j]+values[i][j-1])/2;
-			}
-			else if (i == imax-1 && j == 0) {
-				values[i][j] = (values[i-1][j]+values[i][j+1])/2;
-			}
-			else if (i == 0) {
-				values[i][j] = (values[i+1][j]+values[i][j+1]+values[i][j-1])/3;
-			}
-			else if (j == 0) {
-				values[i][j] = (values[i+1][j]+values[i-1][j]+values[i][j+1])/3;
-			}
-			else if (i == imax-1) {
-				values[i][j] = (values[i-1][j]+values[i][j+1]+values[i][j-1])/3;
-			}
-			else if (j == jmax-1) {
-				values[i][j] = (values[i+1][j]+values[i-1][j]+values[i][j-1])/3;
-			}
-			else {
-				values[i][j] = (values[i+1][j]+values[i-1][j]+values[i][j+1]+values[i][j-1])/4;
-			}
-		}
-	}
-}
+	// SOLVER
+
+	int imax = values.size();
+	int jmax = values[0].size();
+	int choice, num_it = 0, divisor = 0;
+	float newval = 0., error = 0., maxerror = 0., eps = 0.0001;
+	// For Jacobi
+	vector<vector<float> > values_old;
+	// For Red-Black
+	int k;
+	// For SOR
+	float s = 1.2;
+	// Error analysis
+	float erroldval, errnewval;
+	int erri, errj;
+
+	// Print results:
+	cout << "Input Matrix:" << endl;
 	for (int i = 0; i < imax; ++i)
 	{
 		for (int j = 0; j < jmax; ++j)
@@ -139,6 +117,230 @@ int main(int argc, char* argv[]){
 		cout << endl;
 	}
 
+	cout << "Boundary conditions:" << endl;
+	for (int i = 0; i < imax; ++i)
+	{
+		for (int j = 0; j < jmax; ++j)
+		{
+			cout << boundaryconditions[i][j] << " ";
+		}
+		cout << endl;
+	}
+	cout << "Choose your method:" << endl << 
+	"1 - Jacobi" << endl <<
+	"2 - Gauß-Seidel" << endl <<
+	"3 - Gauß-Seidel with Red-Black Ordering" << endl <<
+	"4 - Gauß-Seidel with Successive Over Relaxation" << endl;
+	cin >> choice;
+
+	switch (choice) {
+		case 1:
+		// Jacobi
+		do {
+			maxerror = 0.;
+			values_old = values;
+			for(i=0; i<imax; i++) {
+				for (j=0; j<jmax; j++) {
+					if (boundaryconditions[i][j] == 0) {
+						newval = 0.; divisor = 0;
+						if (i != 0) {
+							newval += values_old[i-1][j];
+							divisor++;
+						}
+						if (i != (imax-1)) {
+							newval += values_old[i+1][j];
+							divisor++;
+						}
+						if (j != 0) {
+							newval += values_old[i][j-1];
+							divisor++;
+						}
+						if (j != (jmax-1)) {
+							newval += values_old[i][j+1];
+							divisor++;
+						}
+						newval /= (float)divisor;
+						error = abs((newval - values_old[i][j]) / newval);
+						if (error > maxerror)
+							maxerror = error;
+						values[i][j] = newval;
+					}
+				}
+			}
+			num_it++;
+			cout << "Iteration No. " << num_it << endl;
+		}
+		while (maxerror > eps);
+		break;
+
+		case 2:
+		// Gauß-Seidel
+		do {
+			maxerror = 0.;
+			for(i=0; i<imax; i++) {
+				for (j=0; j<jmax; j++) {
+					if (boundaryconditions[i][j] == 0) {
+						newval = 0.; divisor = 0;
+						if (i != 0) {
+							newval += values[i-1][j];
+							divisor++;
+						}
+						if (i != (imax-1)) {
+							newval += values[i+1][j];
+							divisor++;
+						}
+						if (j != 0) {
+							newval += values[i][j-1];
+							divisor++;
+						}
+						if (j != (jmax-1)) {
+							newval += values[i][j+1];
+							divisor++;
+						}
+						newval /= (float)divisor;
+						error = abs((newval - values[i][j]) / newval);
+						if (error > maxerror)
+							maxerror = error;
+						values[i][j] = newval;
+					}
+				}
+			}
+			num_it++;
+		}
+		while (maxerror > eps);
+		break;
+
+		case 3:
+		// Gauß-Seidel with Red-Black-ordering
+		do {
+			maxerror = 0.;
+			for(k=0; k<2; k++) {
+				for(i=0; i<imax; i++) {
+					for (j=0; j<jmax; j++) {
+						if (boundaryconditions[i][j] == 0 && (i + j) % 2 == k) {
+							newval = 0.; divisor = 0;
+							if (i != 0) {
+								newval += values[i-1][j];
+								divisor++;
+							}
+							if (i != (imax-1)) {
+								newval += values[i+1][j];
+								divisor++;
+							}
+							if (j != 0) {
+								newval += values[i][j-1];
+								divisor++;
+							}
+							if (j != (jmax-1)) {
+								newval += values[i][j+1];
+								divisor++;
+							}
+							newval /= (float)divisor;
+							error = abs((newval - values[i][j]) / newval);
+							if (error > maxerror)
+								maxerror = error;
+							values[i][j] = newval;
+						}
+					}
+				}
+			}
+			num_it++;
+		}
+		while (maxerror > eps);
+		break;
+
+		case 4:
+		// Gauß-Seidel with SOR
+		do {
+			maxerror = 0.;
+			for(i=0; i<imax; i++) {
+				for (j=0; j<jmax; j++) {
+					if (boundaryconditions[i][j] == 0) {
+						newval = 0.;
+						divisor = 0;
+						if (i != 0) {
+							newval += s*values[i-1][j];
+							divisor++;
+						}
+						if (i != (imax-1)) {
+							newval += s*values[i+1][j];
+							divisor++;
+						}
+						if (j != 0) {
+							newval += s*values[i][j-1];
+							divisor++;
+						}
+						if (j != (jmax-1)) {
+							newval += s*values[i][j+1];
+							divisor++;
+						}
+						newval = (1.-s) * values[i][j] + newval / (float)divisor;
+						error = abs((newval - values[i][j]) / newval);
+						if (error > maxerror)
+							maxerror = error;
+						values[i][j] = newval;
+					}
+				}
+			}
+			num_it++;
+		}
+		while (maxerror > eps);
+		break;
+
+		default:
+		cout << "Well, that was not one of the options, was it?" << endl;
+	}
+
+	cout << "Resulting matrix:" << endl;
+
+	for (int i = 0; i < imax; ++i)
+	{
+		for (int j = 0; j < jmax; ++j)
+		{
+			cout << values[i][j] << " ";
+		}
+		cout << endl;
+	}
+	cout << "Number of iterations: " << num_it << endl;
+
+	/*double values2[imax][jmax];
+	double inrad=6.;
+	double outrad=18.;
+	double outvol=9.;
+	double rad;
+	double centrei, centrej;
+	centrei= 38;
+	centrej= 18;
+	//cout << centrei << endl;
+	//cout << centrej << endl;
+	for(i=0; i<imax; i++) {
+		for (j=0; j<jmax; j++) {
+			if (boundaryconditions[i][j] == 1) {
+				values2[i][j]=values[i][j];
+				continue;
+			}
+			else {
+				rad= sqrt(pow(abs(j-centrej), 2)+pow(abs(i-centrei), 2));
+				//cout << rad << endl;
+				values2[i][j]= (outvol*log(inrad/rad))/(log(inrad/outrad));
+				//cout << values[i][j] << endl;
+			}
+
+		}
+	}
+	cout << "Second" << endl;
+	double difference[imax][jmax];
+	for (int i = 0; i < imax; ++i)
+	{
+			for (int j = 0; j < jmax; ++j)
+			{
+				difference[i][j]= values2[i][j] - values[i][j];
+				cout << difference[i][j] << " ";
+			}
+			cout << endl;
+	}*/
+
+	// OUTPUT
 	int MinxLimit = -5 , MaxxLimit = 5 , MinyLimit = -5 , MaxyLimit = 5;
 
 	x = imax; y = jmax;
@@ -211,8 +413,8 @@ int main(int argc, char* argv[]){
 						
 			out << i << "\t";
 			out << j << "\t";
-			double dx = values[i*multip+1*multip][j*multip]-values[i*multip-1*multip][j*multip];
-			double dy = values[i*multip][j*multip+1*multip]-values[i*multip][j*multip-1*multip];
+			double dx = values[i*multip+(multip-1)][j*multip]-values[i*multip-(multip-1)][j*multip];
+			double dy = values[i*multip][j*multip+(multip-1)]-values[i*multip][j*multip-(multip-1)];
 			
 			double direction = atan2 (dy,dx);
 			double magnitude = pow(pow(dx,2)+pow(dy,2),0.5);
