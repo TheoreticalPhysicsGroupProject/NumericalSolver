@@ -252,10 +252,12 @@ int main(int argc, char* argv[]){
 	
 	inputFile.close();
 
-	// SOLVER
+	// NUMERICAL SOLVER
 
-	int choice;
+	// Define variables
+	int choice, num_it;
 	float eps = 0.0001;
+	int imax = values.size(), jmax = values[0].size();
 
 	// Print results:
 	cout << "Input Matrix:" << endl;
@@ -321,14 +323,16 @@ int main(int argc, char* argv[]){
 	}
 	cout << "Number of iterations: " << num_it << endl;
 
-	/*double values2[imax][jmax];
+
+
+	double values2[imax][jmax];
 	double inrad=6.;
-	double outrad=18.;
+	double outrad=19.;
 	double outvol=9.;
 	double rad;
 	double centrei, centrej;
-	centrei= 38;
-	centrej= 18;
+	centrei= (imax-1) / 2;
+	centrej= (jmax-1) / 2;
 	//cout << centrei << endl;
 	//cout << centrej << endl;
 	for(i=0; i<imax; i++) {
@@ -356,14 +360,40 @@ int main(int argc, char* argv[]){
 				cout << difference[i][j] << " ";
 			}
 			cout << endl;
-	}*/
+	}
+
+	double analyt2[imax][jmax], difference2[imax][jmax], rad2, dist=jmax-1, voltage= values[0][0], theta, R;
+	for(i=0; i<imax; i++) {
+		for (j=0; j<jmax; j++) {
+			if (boundaryconditions[i][j] == 1) {
+				analyt2[i][j]=values[i][j];
+				continue;
+			}
+			else {
+				rad2= sqrt(pow(abs(j-centrej), 2)+pow(abs(i-centrei), 2));
+				theta = atan(abs(j-centrej)/(abs(i-centrei)));
+
+				analyt2[i][j]= ((2*voltage*pow(R,2))/dist)*(cos(theta)/rad2)+((2*voltage)/dist)*rad2*cos(theta);
+			}
+		}
+	}
+	for (int i = 0; i < imax; ++i)
+	{
+			for (int j = 0; j < jmax; ++j)
+			{
+				difference2[i][j]= abs(analyt2[i][j] - values[i][j]);
+				cout << difference2[i][j] << " ";
+			}
+			cout << endl;
+	}
+
 
 	// OUTPUT
-	int MinxLimit = -5 , MaxxLimit = 5 , MinyLimit = -5 , MaxyLimit = 5;
+	int MinxLimit = -5 , MaxxLimit = 5 , MinyLimit = -5 , MaxyLimit = 5; // These are the values of the limits of the labels on the heat-map.
 
-	x = imax; y = jmax;
+	x = imax; y = jmax; // A conversion of variables
 
-	ofstream myfile;
+	ofstream myfile; //creating a file to base the gnuplot off of
 	myfile. open ("outputtestheatmap.txt"); //creating a file to output
 	
 	
@@ -371,19 +401,19 @@ int main(int argc, char* argv[]){
 		
 		if (i == 0) { //first row
 						
-			for (int j = 0 ; j <= y ; j++){
+			for (int j = 0 ; j <= y ; j++){ //this code gives the x limits for the gnuplot
 				
-				if (j == 0) {		//placeholder text, could be anything
-				myfile << MinxLimit << " ";
+				if (j == 0) {
+				myfile << MaxxLimit << " ";
 				}
 				else if (j == 1) {		//left x limit for the gnuplot
-				myfile << MinxLimit << " ";
+				myfile << MaxxLimit << " ";
 				}
 				else if ( j < y ) { //placeholders, could be anything
 				myfile << 0 << " ";
 				}
 				else { //right limit for the Gnuplot
-				myfile << MaxxLimit;
+				myfile << MinxLimit;
 				}
 				
 			}
@@ -393,21 +423,27 @@ int main(int argc, char* argv[]){
 			for (int j = 0 ; j <= y ; j++){
 				
 				if( j == 0 ){
-					if ( i == 1){ //top limit for the gnuplot
-						myfile << MinyLimit << " ";
+					if ( i == 1){ // top y limit for the gnuplot
+						myfile << MaxyLimit << " ";
 					}
 				
-					else if ( i < x ){ // placeholders
+					else if ( i < x ){ // Placeholders as no data can exist in y==0, this fills the data
 						myfile << 0 << " ";
 					}
 				
 					else{ //bottom limit for the gnuplot
-						myfile << MaxyLimit << " ";
+						myfile << MinyLimit << " ";
 					}
 				}
 				
-				else{ //actual data
-					myfile << values[i-1][j-1] << " ";
+				else{ // data
+					
+					//if ( values[i-1][j-1] >= 9 ){
+					//	values[i-1][j-1] = 100;
+					//}
+					
+					
+					myfile << analyt2[i-1][j-1] << " ";
 				}
 			
 			}
@@ -415,31 +451,43 @@ int main(int argc, char* argv[]){
 		}
 		myfile << endl; //endline 
 	}
-	myfile.close(); //closes the file.
-	int multip = 2; //(pow(x,0.5)+1); //a simple "pow(x,0.5)" causes the thing to seg fault for some reason, though it still has a good result
+	myfile.close(); //closes the Heatmap file.
+	
+	int multip = 2; // This MUST BE < 1. This exists so that there are less arrows then there are pixels, dividing the total value of data-pixels by this amount. 
+	
 	int xo = x/multip , yo = y/multip ;
 	
 	
-	ofstream out;
+	ofstream out; //Creting the Vector-map
 	out.open ("outputtestvector.txt"); //creating a file to output
 
+	for (int i = 1 ; i < xo ; i++){ // then creating the x values
 
-	for (int i = 1 ; i < xo ;  i++ ){
-				
-		for (int j = 1 ; j < yo ; j++){
+
+		for (int j = 1 ; j < yo ;  j++ ){ //creating the y values first
 
 						
-			out << i << "\t";
-			out << j << "\t";
-			double dx = values[i*multip+(multip-1)][j*multip]-values[i*multip-(multip-1)][j*multip];
-			double dy = values[i*multip][j*multip+(multip-1)]-values[i*multip][j*multip-(multip-1)];
+			out << -j << "\t"; // if this isn't negative, the values will come out with a pi/2 shift
+			out << -i << "\t"; //as above
 			
-			double direction = atan2 (dy,dx);
-			double magnitude = pow(pow(dx,2)+pow(dy,2),0.5);
+						
+			//double dx = 2;
+			double dx = values [i*multip + (multip-1)] [j*multip] - values [i*multip - (multip-1)] [j*multip]; // this is, dx = value to the left of system[][] - value to the right of system[][]. the multipliers exist to compensate for the lack of details above
+			//double dy = 1;
+			double dy = values [i*multip] [j*multip + (multip-1)] - values [i*multip] [j*multip - (multip-1)]; // same as above but with values above and below system[][]. with the multipliers
+			
+			double direction = atan2 (dx,dy); //this is the atan code for finding the entrie circle instead of simply the first quadrant 
+			
+			double magnitude = pow(pow(dx,2)+pow(dy,2),0.5); // sqrt(a^2+b^2) = c^2 . pythagorean theorem
 			
 			
 			out << direction << "\t";
+			
+			/*if(magnitude > ){
+				magnitude = 15;
+			}*/
 			out << magnitude << endl;
+			//out << pow(magnitude,0.1) << endl;
 					 
 						
 		}
@@ -447,9 +495,6 @@ int main(int argc, char* argv[]){
 	}
 	
 	out.close();
-	
-	
-	// values("./combinedplot.sh");
 	
 	return 0;
 }
