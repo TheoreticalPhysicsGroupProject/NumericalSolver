@@ -9,20 +9,20 @@ using namespace std;
 
 int jacobi(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
 	float error, maxerror, newval;
-	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	int num_it = 0, divisor;
 	vector<vector<float> > values_old;
 	do {
 		maxerror = 0.;
 		values_old = values;
-		for(int i=0; i<imax; i++) {
-			for (int j=0; j<jmax; j++) {
+		for(int i=0; i<values.size(); i++) {
+			for (int j=0; j<values[0].size(); j++) {
 				if (boundaryconditions[i][j] == 0) {
 					newval = 0.; divisor = 0;
 					if (i != 0) {
 						newval += values_old[i-1][j];
 						divisor++;
 					}
-					if (i != (imax-1)) {
+					if (i != (values.size()-1)) {
 						newval += values_old[i+1][j];
 						divisor++;
 					}
@@ -30,7 +30,7 @@ int jacobi(vector<vector<float> >& values, vector<vector<int> >& boundaryconditi
 						newval += values_old[i][j-1];
 						divisor++;
 					}
-					if (j != (jmax-1)) {
+					if (j != (values[0].size()-1)) {
 						newval += values_old[i][j+1];
 						divisor++;
 					}
@@ -51,18 +51,18 @@ int jacobi(vector<vector<float> >& values, vector<vector<int> >& boundaryconditi
 
 int gauss(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
 	float error, maxerror, newval;
-	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	int num_it = 0, divisor;
 	do {
 		maxerror = 0.;
-		for(int i=0; i<imax; i++) {
-			for (int j=0; j<jmax; j++) {
+		for(int i=0; i<values.size(); i++) {
+			for (int j=0; j<values[0].size(); j++) {
 				if (boundaryconditions[i][j] == 0) {
 					newval = 0.; divisor = 0;
 					if (i != 0) {
 						newval += values[i-1][j];
 						divisor++;
 					}
-					if (i != (imax-1)) {
+					if (i != (values.size()-1)) {
 						newval += values[i+1][j];
 						divisor++;
 					}
@@ -70,7 +70,7 @@ int gauss(vector<vector<float> >& values, vector<vector<int> >& boundaryconditio
 						newval += values[i][j-1];
 						divisor++;
 					}
-					if (j != (jmax-1)) {
+					if (j != (values[0].size()-1)) {
 						newval += values[i][j+1];
 						divisor++;
 					}
@@ -85,24 +85,25 @@ int gauss(vector<vector<float> >& values, vector<vector<int> >& boundaryconditio
 		num_it++;
 	}
 	while (maxerror > eps);
+	cout << "Iteration No. " << num_it << endl;
 	return num_it;
 }
 
 int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
 	float error, maxerror, newval;
-	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	int num_it = 0, divisor;
 	do {
 		maxerror = 0.;
 		for(int k=0; k<2; k++) {
-			for(int i=0; i<imax; i++) {
-				for (int j=0; j<jmax; j++) {
+			for(int i=0; i<values.size(); i++) {
+				for (int j=0; j<values[0].size(); j++) {
 					if (boundaryconditions[i][j] == 0 && (i + j) % 2 == k) {
 						newval = 0.; divisor = 0;
 						if (i != 0) {
 							newval += values[i-1][j];
 							divisor++;
 						}
-						if (i != (imax-1)) {
+						if (i != (values.size()-1)) {
 							newval += values[i+1][j];
 							divisor++;
 						}
@@ -110,7 +111,7 @@ int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundarycondi
 							newval += values[i][j-1];
 							divisor++;
 						}
-						if (j != (jmax-1)) {
+						if (j != (values[0].size()-1)) {
 							newval += values[i][j+1];
 							divisor++;
 						}
@@ -126,16 +127,17 @@ int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundarycondi
 		num_it++;
 	}
 	while (maxerror > eps);
+	cout << "Iteration No. " << num_it << endl;
 	return num_it;
 }
 
-int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float s, float eps) {
+int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float s, float eps, int max_it) {
 	float error, maxerror, newval;
-	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	int num_it = 0, divisor;
 	do {
 		maxerror = 0.;
-		for(int i=0; i<imax; i++) {
-			for (int j=0; j<jmax; j++) {
+		for(int i=0; i<values.size(); i++) {
+			for (int j=0; j<values[0].size(); j++) {
 				if (boundaryconditions[i][j] == 0) {
 					newval = 0.;
 					divisor = 0;
@@ -143,7 +145,7 @@ int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundarycond
 						newval += s*values[i-1][j];
 						divisor++;
 					}
-					if (i != (imax-1)) {
+					if (i != (values.size()-1)) {
 						newval += s*values[i+1][j];
 						divisor++;
 					}
@@ -151,11 +153,11 @@ int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundarycond
 						newval += s*values[i][j-1];
 						divisor++;
 					}
-					if (j != (jmax-1)) {
+					if (j != (values[0].size()-1)) {
 						newval += s*values[i][j+1];
 						divisor++;
 					}
-					newval = (1.-s) * values[i][j] + newval / (float)divisor;
+					newval = (1.-s) * values[i][j] + (newval / (float)divisor);
 					error = abs((newval - values[i][j]) / newval);
 					if (error > maxerror)
 						maxerror = error;
@@ -164,6 +166,11 @@ int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundarycond
 			}
 		}
 		num_it++;
+		if (num_it > max_it && max_it != 0) {
+			num_it = -1;
+			break;
+		}
+		cout << "Iteration No. " << num_it << endl;
 	}
 	while (maxerror > eps);
 	return num_it;
@@ -172,16 +179,12 @@ int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundarycond
 int main(int argc, char* argv[]){
 	ifstream inputFile;
 	string line;
-	int negtest = 0;
-	int fractest = 0;
+	int negtest = 0, fractest = 0, i = 0, j = 0, x = 0, y = 0;
 	float number = 0.;
 	vector<vector<float> > values;
 	vector<vector<int> > boundaryconditions;
 	vector<float> systemp;
-	vector<int> boundtemp;
-	vector<int> intigers;
-	vector<int> fractions;
-	int i = 0, j = 0, x = 0, y = 0;
+	vector<int> boundtemp, intigers, fractions;
 
 	
 	inputFile.open(argv[1]);
@@ -254,12 +257,14 @@ int main(int argc, char* argv[]){
 
 	// NUMERICAL SOLVER
 
-	// Define variables
-	int choice, num_it;
-	float eps = 0.0001;
-	int imax = values.size(), jmax = values[0].size();
+	// Parameters
+	float eps = 0.00001;
 
-	// Print results:
+	// Internal variables
+	int choice, num_it, imax = values.size(), jmax = values[0].size();
+	float s, s_ideal; int num_it_ideal = 0; vector<vector<float> > values_sor, values_orig;// In case SOR is chosen
+
+	// Print input
 	cout << "Input Matrix:" << endl;
 	for (int i = 0; i < imax; ++i)
 	{
@@ -269,7 +274,6 @@ int main(int argc, char* argv[]){
 		}
 		cout << endl;
 	}
-
 	cout << "Boundary conditions:" << endl;
 	for (int i = 0; i < imax; ++i)
 	{
@@ -279,6 +283,8 @@ int main(int argc, char* argv[]){
 		}
 		cout << endl;
 	}
+
+	// Choice of method
 	cout << "Choose your method:" << endl << 
 	"1 - Jacobi" << endl <<
 	"2 - Gauß-Seidel" << endl <<
@@ -304,15 +310,29 @@ int main(int argc, char* argv[]){
 
 		case 4:
 		// Gauß-Seidel with SOR
-		num_it = gauss_sor(values, boundaryconditions, 1.2, eps);
+		values_orig = values;
+
+		for (int k = 0; k<20; k++) {
+			values_sor = values_orig;
+			s = 1+0.05*k;
+			cout << "s = " << s << endl;
+			num_it = gauss_sor(values_sor, boundaryconditions, s, eps, num_it_ideal);
+			if (num_it == -1)
+				continue;
+			else if (k == 0 or num_it < num_it_ideal) {
+				num_it_ideal = num_it;
+				s_ideal = s;
+				values = values_sor;
+			}
+		}
 		break;
 
 		default:
 		cout << "Well, that was not one of the options, was it?" << endl;
 	}
 
+	// Print out numerical solution
 	cout << "Resulting matrix:" << endl;
-
 	for (int i = 0; i < imax; ++i)
 	{
 		for (int j = 0; j < jmax; ++j)
@@ -321,48 +341,52 @@ int main(int argc, char* argv[]){
 		}
 		cout << endl;
 	}
-	cout << "Number of iterations: " << num_it << endl;
+	
+	if (choice == 4) {
+		cout << "Ideal s: " << s_ideal << " at " << num_it_ideal << " iterations." << endl;
+	}
+	else
+		cout << "Number of iterations: " << num_it << endl; // Print number of iterations
 
 
+	// ANALYTICAL SOLVER
 
-	double values2[imax][jmax];
-	double inrad=6.;
-	double outrad=19.;
-	double outvol=9.;
-	double rad;
-	double centrei, centrej;
+	// Problem 1
+
+	// Parameters
+	double inrad=6., outrad=19., outvol=9.;
+
+	// Internal variables
+	double analyt1[imax][jmax], difference[imax][jmax], rad, centrei, centrej;
 	centrei= (imax-1) / 2;
 	centrej= (jmax-1) / 2;
-	//cout << centrei << endl;
-	//cout << centrej << endl;
+
 	for(i=0; i<imax; i++) {
 		for (j=0; j<jmax; j++) {
 			if (boundaryconditions[i][j] == 1) {
-				values2[i][j]=values[i][j];
+				analyt1[i][j]=values[i][j];
 				continue;
 			}
 			else {
 				rad= sqrt(pow(abs(j-centrej), 2)+pow(abs(i-centrei), 2));
 				//cout << rad << endl;
-				values2[i][j]= (outvol*log(inrad/rad))/(log(inrad/outrad));
+				analyt1[i][j]= (outvol*log(inrad/rad))/(log(inrad/outrad));
 				//cout << values[i][j] << endl;
 			}
 
 		}
 	}
-	cout << "Second" << endl;
-	double difference[imax][jmax];
 	for (int i = 0; i < imax; ++i)
 	{
 			for (int j = 0; j < jmax; ++j)
 			{
-				difference[i][j]= values2[i][j] - values[i][j];
-				cout << difference[i][j] << " ";
+				difference[i][j]= analyt1[i][j] - values[i][j];
+				//cout << difference[i][j] << " ";
 			}
-			cout << endl;
+			//cout << endl;
 	}
 
-	double analyt2[imax][jmax], difference2[imax][jmax], rad2, dist=jmax-1, voltage= values[0][0], theta, R;
+	double analyt2[imax][jmax], difference2[imax][jmax], rad2, dist= jmax-2, voltage= abs(values[0][0]), theta, R=6;
 	for(i=0; i<imax; i++) {
 		for (j=0; j<jmax; j++) {
 			if (boundaryconditions[i][j] == 1) {
@@ -372,8 +396,13 @@ int main(int argc, char* argv[]){
 			else {
 				rad2= sqrt(pow(abs(j-centrej), 2)+pow(abs(i-centrei), 2));
 				theta = atan(abs(j-centrej)/(abs(i-centrei)));
+				if (j < centrej) {
 
-				analyt2[i][j]= ((2*voltage*pow(R,2))/dist)*(cos(theta)/rad2)+((2*voltage)/dist)*rad2*cos(theta);
+					analyt2[i][j]= ((2*voltage*pow(R,2))/dist)*(sin(theta)/rad2)+((2*voltage)/dist)*rad2*sin(theta);
+				}
+				else{
+					analyt2[i][j]= -(((2*voltage*pow(R,2))/dist)*(sin(theta)/rad2)+((2*voltage)/dist)*rad2*sin(theta));
+				}
 			}
 		}
 	}
@@ -382,9 +411,9 @@ int main(int argc, char* argv[]){
 			for (int j = 0; j < jmax; ++j)
 			{
 				difference2[i][j]= abs(analyt2[i][j] - values[i][j]);
-				cout << difference2[i][j] << " ";
+				//cout << difference2[i][j] << " ";
 			}
-			cout << endl;
+			//cout << endl;
 	}
 
 
@@ -443,7 +472,7 @@ int main(int argc, char* argv[]){
 					//}
 					
 					
-					myfile << analyt2[i-1][j-1] << " ";
+					myfile << values[i-1][j-1] << " ";
 				}
 			
 			}
