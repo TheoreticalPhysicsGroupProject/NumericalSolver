@@ -7,6 +7,168 @@
 
 using namespace std;
 
+int jacobi(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
+	float error, maxerror, newval;
+	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	vector<vector<float> > values_old;
+	do {
+		maxerror = 0.;
+		values_old = values;
+		for(int i=0; i<imax; i++) {
+			for (int j=0; j<jmax; j++) {
+				if (boundaryconditions[i][j] == 0) {
+					newval = 0.; divisor = 0;
+					if (i != 0) {
+						newval += values_old[i-1][j];
+						divisor++;
+					}
+					if (i != (imax-1)) {
+						newval += values_old[i+1][j];
+						divisor++;
+					}
+					if (j != 0) {
+						newval += values_old[i][j-1];
+						divisor++;
+					}
+					if (j != (jmax-1)) {
+						newval += values_old[i][j+1];
+						divisor++;
+					}
+					newval /= (float)divisor;
+					error = abs((newval - values_old[i][j]) / newval);
+					if (error > maxerror)
+						maxerror = error;
+					values[i][j] = newval;
+				}
+			}
+		}
+		num_it++;
+		cout << "Iteration No. " << num_it << endl;
+	}
+	while (maxerror > eps);
+	return num_it;
+}
+
+int gauss(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
+	float error, maxerror, newval;
+	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	do {
+		maxerror = 0.;
+		for(int i=0; i<imax; i++) {
+			for (int j=0; j<jmax; j++) {
+				if (boundaryconditions[i][j] == 0) {
+					newval = 0.; divisor = 0;
+					if (i != 0) {
+						newval += values[i-1][j];
+						divisor++;
+					}
+					if (i != (imax-1)) {
+						newval += values[i+1][j];
+						divisor++;
+					}
+					if (j != 0) {
+						newval += values[i][j-1];
+						divisor++;
+					}
+					if (j != (jmax-1)) {
+						newval += values[i][j+1];
+						divisor++;
+					}
+					newval /= (float)divisor;
+					error = abs((newval - values[i][j]) / newval);
+					if (error > maxerror)
+						maxerror = error;
+					values[i][j] = newval;
+				}
+			}
+		}
+		num_it++;
+	}
+	while (maxerror > eps);
+	return num_it;
+}
+
+int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
+	float error, maxerror, newval;
+	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	do {
+		maxerror = 0.;
+		for(int k=0; k<2; k++) {
+			for(int i=0; i<imax; i++) {
+				for (int j=0; j<jmax; j++) {
+					if (boundaryconditions[i][j] == 0 && (i + j) % 2 == k) {
+						newval = 0.; divisor = 0;
+						if (i != 0) {
+							newval += values[i-1][j];
+							divisor++;
+						}
+						if (i != (imax-1)) {
+							newval += values[i+1][j];
+							divisor++;
+						}
+						if (j != 0) {
+							newval += values[i][j-1];
+							divisor++;
+						}
+						if (j != (jmax-1)) {
+							newval += values[i][j+1];
+							divisor++;
+						}
+						newval /= (float)divisor;
+						error = abs((newval - values[i][j]) / newval);
+						if (error > maxerror)
+							maxerror = error;
+						values[i][j] = newval;
+					}
+				}
+			}
+		}
+		num_it++;
+	}
+	while (maxerror > eps);
+	return num_it;
+}
+
+int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float s, float eps) {
+	float error, maxerror, newval;
+	int num_it = 0, divisor, imax = values.size(), jmax = values[0].size();
+	do {
+		maxerror = 0.;
+		for(int i=0; i<imax; i++) {
+			for (int j=0; j<jmax; j++) {
+				if (boundaryconditions[i][j] == 0) {
+					newval = 0.;
+					divisor = 0;
+					if (i != 0) {
+						newval += s*values[i-1][j];
+						divisor++;
+					}
+					if (i != (imax-1)) {
+						newval += s*values[i+1][j];
+						divisor++;
+					}
+					if (j != 0) {
+						newval += s*values[i][j-1];
+						divisor++;
+					}
+					if (j != (jmax-1)) {
+						newval += s*values[i][j+1];
+						divisor++;
+					}
+					newval = (1.-s) * values[i][j] + newval / (float)divisor;
+					error = abs((newval - values[i][j]) / newval);
+					if (error > maxerror)
+						maxerror = error;
+					values[i][j] = newval;
+				}
+			}
+		}
+		num_it++;
+	}
+	while (maxerror > eps);
+	return num_it;
+}
+
 int main(int argc, char* argv[]){
 	ifstream inputFile;
 	string line;
@@ -92,19 +254,8 @@ int main(int argc, char* argv[]){
 
 	// SOLVER
 
-	int imax = values.size();
-	int jmax = values[0].size();
-	int choice, num_it = 0, divisor = 0;
-	float newval = 0., error = 0., maxerror = 0., eps = 0.0001;
-	// For Jacobi
-	vector<vector<float> > values_old;
-	// For Red-Black
-	int k;
-	// For SOR
-	float s = 1.2;
-	// Error analysis
-	float erroldval, errnewval;
-	int erri, errj;
+	int choice;
+	float eps = 0.0001;
 
 	// Print results:
 	cout << "Input Matrix:" << endl;
@@ -136,155 +287,22 @@ int main(int argc, char* argv[]){
 	switch (choice) {
 		case 1:
 		// Jacobi
-		do {
-			maxerror = 0.;
-			values_old = values;
-			for(i=0; i<imax; i++) {
-				for (j=0; j<jmax; j++) {
-					if (boundaryconditions[i][j] == 0) {
-						newval = 0.; divisor = 0;
-						if (i != 0) {
-							newval += values_old[i-1][j];
-							divisor++;
-						}
-						if (i != (imax-1)) {
-							newval += values_old[i+1][j];
-							divisor++;
-						}
-						if (j != 0) {
-							newval += values_old[i][j-1];
-							divisor++;
-						}
-						if (j != (jmax-1)) {
-							newval += values_old[i][j+1];
-							divisor++;
-						}
-						newval /= (float)divisor;
-						error = abs((newval - values_old[i][j]) / newval);
-						if (error > maxerror)
-							maxerror = error;
-						values[i][j] = newval;
-					}
-				}
-			}
-			num_it++;
-			cout << "Iteration No. " << num_it << endl;
-		}
-		while (maxerror > eps);
+		num_it = jacobi(values, boundaryconditions, eps);
 		break;
 
 		case 2:
 		// Gauß-Seidel
-		do {
-			maxerror = 0.;
-			for(i=0; i<imax; i++) {
-				for (j=0; j<jmax; j++) {
-					if (boundaryconditions[i][j] == 0) {
-						newval = 0.; divisor = 0;
-						if (i != 0) {
-							newval += values[i-1][j];
-							divisor++;
-						}
-						if (i != (imax-1)) {
-							newval += values[i+1][j];
-							divisor++;
-						}
-						if (j != 0) {
-							newval += values[i][j-1];
-							divisor++;
-						}
-						if (j != (jmax-1)) {
-							newval += values[i][j+1];
-							divisor++;
-						}
-						newval /= (float)divisor;
-						error = abs((newval - values[i][j]) / newval);
-						if (error > maxerror)
-							maxerror = error;
-						values[i][j] = newval;
-					}
-				}
-			}
-			num_it++;
-		}
-		while (maxerror > eps);
+		num_it = gauss(values, boundaryconditions, eps);
 		break;
 
 		case 3:
 		// Gauß-Seidel with Red-Black-ordering
-		do {
-			maxerror = 0.;
-			for(k=0; k<2; k++) {
-				for(i=0; i<imax; i++) {
-					for (j=0; j<jmax; j++) {
-						if (boundaryconditions[i][j] == 0 && (i + j) % 2 == k) {
-							newval = 0.; divisor = 0;
-							if (i != 0) {
-								newval += values[i-1][j];
-								divisor++;
-							}
-							if (i != (imax-1)) {
-								newval += values[i+1][j];
-								divisor++;
-							}
-							if (j != 0) {
-								newval += values[i][j-1];
-								divisor++;
-							}
-							if (j != (jmax-1)) {
-								newval += values[i][j+1];
-								divisor++;
-							}
-							newval /= (float)divisor;
-							error = abs((newval - values[i][j]) / newval);
-							if (error > maxerror)
-								maxerror = error;
-							values[i][j] = newval;
-						}
-					}
-				}
-			}
-			num_it++;
-		}
-		while (maxerror > eps);
+		num_it = gauss_rb(values, boundaryconditions, eps);
 		break;
 
 		case 4:
 		// Gauß-Seidel with SOR
-		do {
-			maxerror = 0.;
-			for(i=0; i<imax; i++) {
-				for (j=0; j<jmax; j++) {
-					if (boundaryconditions[i][j] == 0) {
-						newval = 0.;
-						divisor = 0;
-						if (i != 0) {
-							newval += s*values[i-1][j];
-							divisor++;
-						}
-						if (i != (imax-1)) {
-							newval += s*values[i+1][j];
-							divisor++;
-						}
-						if (j != 0) {
-							newval += s*values[i][j-1];
-							divisor++;
-						}
-						if (j != (jmax-1)) {
-							newval += s*values[i][j+1];
-							divisor++;
-						}
-						newval = (1.-s) * values[i][j] + newval / (float)divisor;
-						error = abs((newval - values[i][j]) / newval);
-						if (error > maxerror)
-							maxerror = error;
-						values[i][j] = newval;
-					}
-				}
-			}
-			num_it++;
-		}
-		while (maxerror > eps);
+		num_it = gauss_sor(values, boundaryconditions, 1.2, eps);
 		break;
 
 		default:
