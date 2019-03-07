@@ -9,7 +9,7 @@ using namespace std;
 
 void error_calc(float &oldval, float &newval, float &eps, int &contcond, float &error){
 	//float error;
-	if (newval < eps)
+	if (abs(newval) < 1)
 		error = abs(newval - oldval);
 	else
 		error = abs((newval - oldval) / newval);
@@ -272,7 +272,7 @@ int main(int argc, char* argv[]){
 
 	// Parameters
 	float eps = 0.00001;
-	int kmax = 100;
+	int kmax = 200;
 
 	// Internal variables
 	int choice, num_it, imax = values.size(), jmax = values[0].size();
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]){
 		values_orig = values;
 		for (int k = 0; k<kmax; k++) {
 			values_sor = values_orig;
-			s = 1. + (1./ (float)kmax) * (float)k;
+			s =  (2./ (float)kmax) * ((float)k + 1);
 			cout << "s = " << s << endl;
 			num_it = gauss_sor(values_sor, boundaryconditions, s, eps, num_it_ideal);
 			if (num_it == -1)
