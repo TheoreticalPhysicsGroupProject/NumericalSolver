@@ -7,12 +7,24 @@
 
 using namespace std;
 
+void error_calc(float &oldval, float &newval, float &eps, int &contcond){
+	float error;
+	if (newval < eps)
+		error = abs(newval - oldval);
+	else
+		error = abs((newval - oldval) / newval);
+	if (error > eps) {
+		contcond = 1;
+	}
+}
+
 int jacobi(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
-	float error, maxerror, newval;
-	int num_it = 0, divisor;
+	float error, newval;
+	int num_it = 0, divisor, contcond = 0;
+	float change = 0.;
 	vector<vector<float> > values_old;
 	do {
-		maxerror = 0.;
+		contcond = 0;
 		values_old = values;
 		for(int i=0; i<values.size(); i++) {
 			for (int j=0; j<values[0].size(); j++) {
@@ -35,65 +47,45 @@ int jacobi(vector<vector<float> >& values, vector<vector<int> >& boundaryconditi
 						divisor++;
 					}
 					newval /= (float)divisor;
-					error = abs((newval - values_old[i][j]) / newval);
-					if (error > maxerror)
-						maxerror = error;
+					error_calc(values_old[i][j], newval, eps, contcond);
 					values[i][j] = newval;
 				}
 			}
 		}
 		num_it++;
-		cout << "Iteration No. " << num_it << endl;
 	}
-	while (maxerror > eps);
+	while (contcond == 1);
+	cout << "Iteration No. " << num_it << endl;
 	return num_it;
 }
 
 int gauss(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
-	float error, maxerror, newval;
-	int num_it = 0, divisor;
+	float error, newval;
+	int num_it = 0, divisor, contcond = 0;
 	do {
-		maxerror = 0.;
+		contcond = 0;
 		for(int i=0; i<values.size(); i++) {
 			for (int j=0; j<values[0].size(); j++) {
 				if (boundaryconditions[i][j] == 0) {
-					newval = 0.; divisor = 0;
-					if (i != 0) {
-						newval += values[i-1][j];
-						divisor++;
-					}
-					if (i != (values.size()-1)) {
-						newval += values[i+1][j];
-						divisor++;
-					}
-					if (j != 0) {
-						newval += values[i][j-1];
-						divisor++;
-					}
-					if (j != (values[0].size()-1)) {
-						newval += values[i][j+1];
-						divisor++;
-					}
-					newval /= (float)divisor;
-					error = abs((newval - values[i][j]) / newval);
-					if (error > maxerror)
-						maxerror = error;
-					values[i][j] = newval;
+					
+
+
+					
 				}
 			}
 		}
 		num_it++;
 	}
-	while (maxerror > eps);
+	while (contcond == 1);
 	cout << "Iteration No. " << num_it << endl;
 	return num_it;
 }
 
 int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float eps) {
-	float error, maxerror, newval;
-	int num_it = 0, divisor;
+	float error, newval;
+	int num_it = 0, divisor, contcond = 0;
 	do {
-		maxerror = 0.;
+		contcond = 0;
 		for(int k=0; k<2; k++) {
 			for(int i=0; i<values.size(); i++) {
 				for (int j=0; j<values[0].size(); j++) {
@@ -116,9 +108,7 @@ int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundarycondi
 							divisor++;
 						}
 						newval /= (float)divisor;
-						error = abs((newval - values[i][j]) / newval);
-						if (error > maxerror)
-							maxerror = error;
+						error_calc(values[i][j], newval, eps, contcond);
 						values[i][j] = newval;
 					}
 				}
@@ -126,16 +116,16 @@ int gauss_rb(vector<vector<float> >& values, vector<vector<int> >& boundarycondi
 		}
 		num_it++;
 	}
-	while (maxerror > eps);
+	while (contcond == 1);
 	cout << "Iteration No. " << num_it << endl;
 	return num_it;
 }
 
 int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundaryconditions, float s, float eps, int max_it) {
-	float error, maxerror, newval;
-	int num_it = 0, divisor;
+	float error, newval;
+	int num_it = 0, divisor, contcond = 0;
 	do {
-		maxerror = 0.;
+		contcond = 0;
 		for(int i=0; i<values.size(); i++) {
 			for (int j=0; j<values[0].size(); j++) {
 				if (boundaryconditions[i][j] == 0) {
@@ -158,9 +148,7 @@ int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundarycond
 						divisor++;
 					}
 					newval = (1.-s) * values[i][j] + (newval / (float)divisor);
-					error = abs((newval - values[i][j]) / newval);
-					if (error > maxerror)
-						maxerror = error;
+					error_calc(values[i][j], newval, eps, contcond);
 					values[i][j] = newval;
 				}
 			}
@@ -172,7 +160,7 @@ int gauss_sor(vector<vector<float> >& values, vector<vector<int> >& boundarycond
 		}
 		cout << "Iteration No. " << num_it << endl;
 	}
-	while (maxerror > eps);
+	while (contcond == 1);
 	return num_it;
 }
 
@@ -311,10 +299,10 @@ int main(int argc, char* argv[]){
 		case 4:
 		// Gauß-Seidel with SOR
 		values_orig = values;
-
-		for (int k = 0; k<20; k++) {
+		int kmax = 100;
+		for (int k = 0; k<kmax; k++) {
 			values_sor = values_orig;
-			s = 1+0.05*k;
+			s = 1+(1/kmax)*k;
 			cout << "s = " << s << endl;
 			num_it = gauss_sor(values_sor, boundaryconditions, s, eps, num_it_ideal);
 			if (num_it == -1)
