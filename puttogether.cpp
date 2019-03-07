@@ -4,26 +4,8 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include <time.h>
-#include <chrono>
-#include <time.h>
-#include "stdlib.h"
-#include "stdio.h"
-#include "string.h"
-#include "sys/times.h"
-#include <sys/resource.h>
-#include <sys/times.h>
-#include <unistd.h>
 
 using namespace std;
-using namespace std::chrono;
-
-double cpu_time() {
-	struct rusage usage;
-	getrusage(RUSAGE_SELF, &usage);
-	double c= usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
-	return c;
-}
 
 void error_calc(float &oldval, float &newval, float &eps, int &contcond){
 	float error;
@@ -85,10 +67,26 @@ int gauss(vector<vector<float> >& values, vector<vector<int> >& boundaryconditio
 		for(int i=0; i<values.size(); i++) {
 			for (int j=0; j<values[0].size(); j++) {
 				if (boundaryconditions[i][j] == 0) {
-					
-
-
-					
+					newval = 0.; divisor = 0;
+					if (i != 0) {
+						newval += values[i-1][j];
+						divisor++;
+					}
+					if (i != (values.size()-1)) {
+						newval += values[i+1][j];
+						divisor++;
+					}
+					if (j != 0) {
+						newval += values[i][j-1];
+						divisor++;
+					}
+					if (j != (values[0].size()-1)) {
+						newval += values[i][j+1];
+						divisor++;
+					}
+					newval /= (float)divisor;
+					error_calc(values[i][j], newval, eps, contcond);
+					values[i][j] = newval;
 				}
 			}
 		}
@@ -265,11 +263,10 @@ int main(int argc, char* argv[]){
 
 	// Parameters
 	float eps = 0.00001;
+	int kmax = 100;
 
 	// Internal variables
 	int choice, num_it, imax = values.size(), jmax = values[0].size();
-	high_resolution_clock::time_point t1, t2;
-	float duration;
 	float s, s_ideal; int num_it_ideal = 0; vector<vector<float> > values_sor, values_orig;// In case SOR is chosen
 
 	// Print input
@@ -303,33 +300,22 @@ int main(int argc, char* argv[]){
 	switch (choice) {
 		case 1:
 		// Jacobi
-		t1 = high_resolution_clock::now();
 		num_it = jacobi(values, boundaryconditions, eps);
-		t2 = high_resolution_clock::now();
-    		duration = duration_cast<microseconds>( t2 - t1 ).count();
 		break;
 
 		case 2:
 		// Gauß-Seidel
-		t1 = high_resolution_clock::now();
 		num_it = gauss(values, boundaryconditions, eps);
-		t2 = high_resolution_clock::now();
-    		duration = duration_cast<microseconds>( t2 - t1 ).count();
 		break;
 
 		case 3:
 		// Gauß-Seidel with Red-Black-ordering
-		t1 = high_resolution_clock::now();
 		num_it = gauss_rb(values, boundaryconditions, eps);
-		t2 = high_resolution_clock::now();
-    		duration = duration_cast<microseconds>( t2 - t1 ).count();
 		break;
 
 		case 4:
 		// Gauß-Seidel with SOR
-		t1 = high_resolution_clock::now();
 		values_orig = values;
-		int kmax = 100;
 		for (int k = 0; k<kmax; k++) {
 			values_sor = values_orig;
 			s = 1+(1/kmax)*k;
@@ -343,8 +329,6 @@ int main(int argc, char* argv[]){
 				values = values_sor;
 			}
 		}
-		t2 = high_resolution_clock::now();
-    		duration = duration_cast<microseconds>( t2 - t1 ).count();
 		break;
 
 		default:
@@ -367,11 +351,6 @@ int main(int argc, char* argv[]){
 	}
 	else
 		cout << "Number of iterations: " << num_it << endl; // Print number of iterations
-		cout << "Function duration: " << duration << " micro seconds" << endl;
-		double cpu_usage, totcputime;
-		totcputime= cpu_time();
-		cpu_usage= (duration/totcputime)*100;
-		cout << "CPU usage of the solver: " << cpu_usage << " %" << endl;
 
 
 	// ANALYTICAL SOLVER
